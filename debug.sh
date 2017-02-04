@@ -7,4 +7,5 @@
 #!/bin/bash
 #./x264 -v   --pass 1 --bitrate 2000 -o test.264 --input-res 1280x720 --input-csp i420 ./1280_720_frame_10.yuv 
 b main
+b encoder/encoder.c:3753
 run -v   --pass 1 --bitrate 2000 -o test.264 --input-res 1280x720 --input-csp i420 ./1280_720_frame_10.yuv 

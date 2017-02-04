@@ -264,6 +264,15 @@ int64_t x264_mdate( void );
  * the encoding options */
 char *x264_param2string( x264_param_t *p, int b_res );
 
+#ifdef LIYL_DEBUG
+/* x264_x264_t_2string: return a (malloced) string containing most of
+ * the encoding options */
+char *x264_x264_t2string( x264_t *h, int i_inc );
+/* x264_nal_t_2string: return a (malloced) string containing most of
+ * the encoding options */
+char *x264_nal_t2string( x264_t *h, int i_inc );
+#endif
+
 /* log */
 void x264_log( x264_t *h, int i_level, const char *psz_fmt, ... );
 

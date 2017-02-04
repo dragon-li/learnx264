@@ -1444,4 +1444,189 @@ char *x264_param2string( x264_param_t *p, int b_res )
 
     return buf;
 }
+#if LIYL_DEBUG
+/****************************************************************************
+ * x264_array2string
+ ****************************************************************************/
+#define X264_ARRAY2STRING(type,array,i_len) do{                   \
+   s += sprintf( s, " = { ");                               \
+   for(int i = 0;i < (i_len);i++) {                               \
+       s += sprintf( s, "%#x ,", *((type)(array)+i));             \
+   }                                                              \
+       s += sprintf( s, "%s \n","}");                             \
+} while(0)                                                        \
 
+
+/****************************************************************************
+ * x264_nal_t2string:
+ ****************************************************************************/
+char *x264_nal_t2string( x264_t *h, int i_inc ) {
+    int len = 1000;
+    char *buf, *s;
+    if(i_inc)
+        len += i_inc;
+    buf = s = x264_malloc( len );
+    if( !buf )
+        return NULL;
+	//(gdb) pt  h->out.nal
+	//	type = struct x264_nal_t {
+	//		int i_ref_idc;
+   s += sprintf( s, "int i_ref_idc  =%d \n", h->out.nal->i_ref_idc);
+	//		int i_type;
+   s += sprintf( s, "int i_type =%d \n", h->out.nal->i_type );
+	//		int b_long_startcode;
+   s += sprintf( s, "int b_long_startcode =%d \n", h->out.nal->b_long_startcode);
+	//		int i_first_mb;
+   s += sprintf( s, "int i_first_mb =%d \n", h->out.nal->i_first_mb );
+	//		int i_last_mb;
+   s += sprintf( s, "int i_last_mb =%d \n", h->out.nal->i_last_mb );
+	//		int i_payload;
+   s += sprintf( s, "int i_payload =%d \n", h->out.nal->i_payload );
+	//		uint8_t *p_payload;
+   s += sprintf( s, "uint8_t *p_payload =%p ", h->out.nal->p_payload );
+   X264_ARRAY2STRING(uint8_t*,h->out.nal->p_payload,h->out.nal->i_payload);
+
+	//		int i_padding;
+   s += sprintf( s, "int i_padding =%d \n", h->out.nal->i_padding );
+	//	} *
+
+    return buf;
+}
+/****************************************************************************
+ * x264_param2string:
+ ****************************************************************************/
+char *x264_x264_t2string( x264_t *h, int i_inc )
+{
+    int len = 10000;
+    char *buf, *s;
+    if(i_inc)
+        len += i_inc;
+    buf = s = x264_malloc( len );
+    if( !buf )
+        return NULL;
+
+     char* nalstr = x264_nal_t2string(h,5000);
+     x264_log( h, X264_LOG_INFO, "nalstr = %s\n", nalstr);
+	 x264_free(nalstr);
+  // type = struct x264_t {
+  // x264_param_t param;
+  // x264_t *thread[129];
+   s += sprintf( s, "x264_t *thread[129] =%p \n", h->thread );
+  // x264_t *lookahead_thread[16];
+   s += sprintf( s, "x264_t *lookahead_threads[16] =%p \n", h->lookahead_thread );
+  // int b_thread_active;
+   s += sprintf( s, " int b_thread_active =%d \n", h->b_thread_active);
+  // int i_thread_phase;
+   s += sprintf( s, "int i_thread_phase =%#x \n", h->i_thread_phase);
+  // int i_thread_idx;
+   s += sprintf( s, "int i_thread_idx =%d \n", h->i_thread_idx);
+  // int i_threadslice_start;
+   s += sprintf( s, "int i_threadslice_start =%d \n", h->i_threadslice_start);
+  // int i_threadslice_end;
+   s += sprintf( s, "int i_threadslice_end =%d \n", h->i_threadslice_end);
+  // int i_threadslice_pass;
+   s += sprintf( s, "int i_threadslice_pass =%d \n", h->i_threadslice_pass);
+  // x264_threadpool_t *threadpool;
+   s += sprintf( s, "x264_threadpool_t *threadpool = %p \n", h->threadpool);
+  // x264_threadpool_t *lookaheadpool;
+   s += sprintf( s, "x264_threadpool_t *lookaheadpool = %p \n", h->lookaheadpool);
+  // pthread_mutex_t mutex;
+   s += sprintf( s, "pthread_mutex_t mutex = %p \n", &(h->mutex));
+  // pthread_cond_t cv;
+   s += sprintf( s, "pthread_cond_t cv  = %p \n", &(h->cv));
+  // struct {
+  // int i_nal;
+   s += sprintf( s, "int out.i_nal = %d \n", h->out.i_nal);
+  // int i_nals_allocated;
+   s += sprintf( s, "int out.i_nals_allocated = %d \n", h->out.i_nals_allocated);
+  // x264_nal_t *nal;
+   s += sprintf( s, "x264_nal_t *  out.nal = %p \n", h->out.nal);
+
+  // int i_bitstream;
+   s += sprintf( s, "int out.i_bitstream = %d \n", h->out.i_bitstream);
+  // uint8_t *p_bitstream;
+   s += sprintf( s, "uint8_t* out.p_bitstream = %p \n", h->out.p_bitstream);
+  // bs_t bs;
+   s += sprintf( s, "bs_t  out.p_bitstream = %p \n", &(h->out.bs));
+  // } out;
+  // uint8_t *nal_buffer;
+   s += sprintf( s, "uint8_t *nal_buffer = %p \n", h->nal_buffer);
+  // int nal_buffer_size;
+   s += sprintf( s, "int nal_buffer_size = %d \n", h->nal_buffer_size);
+  // x264_t *reconfig_h;
+   s += sprintf( s, "x264_t *reconfig_h = %p \n", h->reconfig_h);
+  // int reconfig;
+   s += sprintf( s, "int reconfig = %d \n", h->reconfig);
+  // int i_frame;
+   s += sprintf( s, "int i_frame = %d \n", h->i_frame);
+  // int i_frame_num;
+   s += sprintf( s, "int i_frame_num = %d \n", h->i_frame_num);
+  // int i_thread_frames;
+   s += sprintf( s, "int i_thread_frames = %d \n", h->i_thread_frames);
+  // int i_nal_type;
+   s += sprintf( s, "int i_nal_type = %d \n", h->i_nal_type);
+  // int i_nal_ref_idc;
+   s += sprintf( s, "int i_nal_ref_idc = %d \n", h->i_nal_ref_idc);
+  // int64_t i_disp_fields;
+   s += sprintf( s, "int64_t i_disp_fields = %ld \n", h->i_disp_fields);
+  // int i_disp_fields_last_frame;
+   s += sprintf( s, "int i_disp_fields_last_frame = %d \n", h->i_disp_fields_last_frame);
+  // int64_t i_prev_duration;
+   s += sprintf( s, "int64_t i_prev_duration = %ld \n", h->i_prev_duration);
+  // int64_t i_coded_fields;
+   s += sprintf( s, "int64_t i_coded_fields = %ld \n", h->i_coded_fields);
+  // int64_t i_cpb_delay;
+   s += sprintf( s, "int64_t i_cpb_delay = %ld \n", h->i_cpb_delay);
+  // int64_t i_coded_fields_lookahead;
+   s += sprintf( s, "int64_t i_coded_fields_lookahead = %ld \n", h->i_coded_fields_lookahead);
+  // int64_t i_cpb_delay_lookahead;
+   s += sprintf( s, "int64_t i_cpb_delay_lookahead = %ld \n", h->i_coded_fields_lookahead);
+  // int64_t i_cpb_delay_pir_offset;
+   s += sprintf( s, "int64_t i_cpb_delay_pir_offset = %ld \n", h->i_cpb_delay_pir_offset);
+  // int64_t i_cpb_delay_pir_offset_next;
+   s += sprintf( s, "int64_t i_cpb_delay_pir_offset_next = %ld \n", h->i_cpb_delay_pir_offset_next);
+  // int b_queued_intra_refresh;
+   s += sprintf( s, "int b_queued_intra_refresh = %d \n", h->b_queued_intra_refresh);
+  // int64_t i_last_idr_pts;
+   s += sprintf( s, "int64_t i_last_idr_pts = %ld \n", h->i_last_idr_pts);
+  // int i_idr_pic_id;
+   s += sprintf( s, "int i_idr_pic_id = %d \n", h->i_idr_pic_id);
+  // int (*dequant4_mf[4])[16];
+   s += sprintf( s, "int (*dequant4_mf[4])[16] = %p \n", h->dequant4_mf);
+  // int (*dequant8_mf[4])[64];
+   s += sprintf( s, "int (*dequant8_mf[4])[64] = %p \n", h->dequant8_mf);
+  // int (*unquant4_mf[4])[16];
+   s += sprintf( s, "int (*unquant4_mf[4])[16] = %p \n", h->unquant4_mf);
+  // int (*unquant8_mf[4])[64];
+   s += sprintf( s, "int (*unquant8_mf[4])[64] = %p \n", h->unquant8_mf);
+  // udctcoef (*quant4_mf[4])[16];
+   s += sprintf( s, "udctcoef (*quant4_mf[4])[16] = %p \n", h->quant4_mf);
+  // udctcoef (*quant8_mf[4])[64];
+   s += sprintf( s, "udctcoef (*quant8_mf[4])[64] = %p \n", h->quant8_mf);
+  // udctcoef (*quant4_bias[4])[16];
+   s += sprintf( s, "udctcoef (*quant4_bias[4])[64] = %p \n", h->quant4_bias);
+  // udctcoef (*quant8_bias[4])[64];
+   s += sprintf( s, "udctcoef (*quant8_bias[4])[64] = %p \n", h->quant8_bias);
+  // udctcoef (*quant4_bias0[4])[16];
+   s += sprintf( s, "udctcoef (*quant4_bias0[4])[16] = %p \n", h->quant4_bias);
+  // udctcoef (*quant8_bias0[4])[64];
+  // udctcoef (*nr_offset_emergency)[4][64];
+  // uint16_t *cost_mv[70];
+  // uint16_t *cost_mv_fpel[70][4];
+  // const uint8_t *chroma_qp_table;
+  // x264_slice_header_t sh;
+  // x264_sps_t sps[1];
+  // x264_pps_t pps[1];
+  // int b_sh_backup;
+  // x264_slice_header_t sh_backup;
+  // x264_cabac_t cabac;
+
+
+
+
+
+    return buf;
+}
+
+
+#endif //LIYL_DEBUG
