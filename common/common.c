@@ -1449,7 +1449,7 @@ char *x264_param2string( x264_param_t *p, int b_res )
  * x264_array2string
  ****************************************************************************/
 #define X264_ARRAY2STRING(type,array,i_len) do{                   \
-   s += sprintf( s, " = { ");                               \
+   s += sprintf( s, " = { ");                                     \
    for(int i = 0;i < (i_len);i++) {                               \
        s += sprintf( s, "%#x ,", *((type)(array)+i));             \
    }                                                              \
@@ -1461,7 +1461,7 @@ char *x264_param2string( x264_param_t *p, int b_res )
  * x264_nal_t2string:
  ****************************************************************************/
 char *x264_nal_t2string( x264_t *h, int i_inc ) {
-    int len = 1000;
+    int len = 50000;
     char *buf, *s;
     if(i_inc)
         len += i_inc;
@@ -1473,7 +1473,25 @@ char *x264_nal_t2string( x264_t *h, int i_inc ) {
 	//		int i_ref_idc;
    s += sprintf( s, "int i_ref_idc  =%d \n", h->out.nal->i_ref_idc);
 	//		int i_type;
-   s += sprintf( s, "int i_type =%d \n", h->out.nal->i_type );
+
+  // enum nal_unit_type_e
+  // {
+	//   NAL_UNKNOWN     = 0,
+	//   NAL_SLICE       = 1,
+	//   NAL_SLICE_DPA   = 2,
+	//   NAL_SLICE_DPB   = 3,
+	//   NAL_SLICE_DPC   = 4,
+	//   NAL_SLICE_IDR   = 5,    /* ref_idc != 0 */
+	//   NAL_SEI         = 6,    /* ref_idc == 0 */
+	//   NAL_SPS         = 7,
+	//   NAL_PPS         = 8,
+	//   NAL_AUD         = 9,
+	//   NAL_FILLER      = 12,
+	//   /* ref_idc == 0 for 6,9,10,11,12 */
+  // };
+   char *nal_unit_type_str[13] = {"NAL_UNKNOWN","NAL_SLICE","NAL_SLICE_DPA","NAL_SLICE_DPB"
+,"NAL_SLICE_DPC","NAL_SLICE_IDR","NAL_SEI","NAL_SPS","NAL_PPS","NAL_AUD","NAL_RESERVE","NAL_RESERVE","NAL_FILLER"};
+   s += sprintf( s, "int i_type =%s \n", nal_unit_type_str[h->out.nal->i_type]);
 	//		int b_long_startcode;
    s += sprintf( s, "int b_long_startcode =%d \n", h->out.nal->b_long_startcode);
 	//		int i_first_mb;

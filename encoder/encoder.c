@@ -3749,7 +3749,7 @@ int     x264_encoder_encode( x264_t *h,
     else
         if( (intptr_t)x264_slices_write( h ) )
             return -1;
-#ifdef LIYL_DEBUG
+#ifdef LIYL_DEBUG_NO
 
     x264_log( h, X264_LOG_INFO, "x264_t print \n" );
 	char* x264_t_str = x264_x264_t2string(h,5000);
