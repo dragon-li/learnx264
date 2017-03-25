@@ -456,8 +456,8 @@ void x264_frame_init_lowres( x264_t *h, x264_frame_t *frame )
 
     // duplicate last row and column so that their interpolation doesn't have to be special-cased
     for( int y = 0; y < i_height; y++ )
-        src[i_width+y*i_stride] = src[i_width-1+y*i_stride];
-    memcpy( src+i_stride*i_height, src+i_stride*(i_height-1), (i_width+1) * sizeof(pixel) );
+        src[i_width+y*i_stride] = src[i_width-1+y*i_stride]; //duplicate last column
+    memcpy( src+i_stride*i_height, src+i_stride*(i_height-1), (i_width+1) * sizeof(pixel) ); //duplicate last row
     h->mc.frame_init_lowres_core( src, frame->lowres[0], frame->lowres[1], frame->lowres[2], frame->lowres[3],
                                   i_stride, frame->i_stride_lowres, frame->i_width_lowres, frame->i_lines_lowres );
     x264_frame_expand_border_lowres( frame );
@@ -472,25 +472,58 @@ void x264_frame_init_lowres( x264_t *h, x264_frame_t *frame )
         for( int x = 0; x <= h->param.i_bframe; x++ )
             frame->lowres_mvs[y][x][0][0] = 0x7FFF;
 }
-
+// |            |
+// |            |
+// |            |
+// x=0          x=1
+// |            |
+// |            |
+// |            |
+// A00   A01   A02   A03   A04 |-----------------y=0----
+//     0     h     0     h
+// A10   A11   A12   A13   A14 |
+//     v     c     v     c
+// A20   A21   A22   A23   A24 |-----------------y=1----
+//     0     h     0     h
+// A30   A31   A32   A33   A34 |
+//     v     c     v     c
+// A40   A41   A42   A43   A44 |
+//
+//Don't include the last row and last column
+//x = columns, y= rows
+//-----------------------------------------------------
+//|A(x,y)......A(x+3,y+3)                       | x16 A
+//|0(x,y) 0(x,y+2) 0(x+2,y) 0(x+2,y+2)          | x4  0
+//|h(x+1,y) h(x+3,y) h(x+1,y+2) h(x+3,y+2)      | x4  h
+//|v(x,y) v(x,y+2) v(x+2,y) v(x+2,y+2)          | x4  v
+//|c(x+1,y+1) c(x+3,y+1) c(x+1,y+3) c(x+3,y+3)  | x4  c
+//-----------------------------------------------------
+//Example: 1280X720 call this function ; 1280x720 gernerate x4 640x360 lowres{0,h,v,c}
+//    GDB: frame_init_lowres_core (src0=0x7ffff568c4e0 , dst0=0x7ffff5788960 ,
+//         dsth=0x7ffff57d1760 , dstv=0x7ffff581a560 , dstc=0x7ffff5863360 ,
+//         src_stride=1344, dst_stride=704, width=640,
+//         height=360) at common/mc.c:507
+//
 static void frame_init_lowres_core( pixel *src0, pixel *dst0, pixel *dsth, pixel *dstv, pixel *dstc,
                                     intptr_t src_stride, intptr_t dst_stride, int width, int height )
 {
     for( int y = 0; y < height; y++ )
     {
+		// src0--->line0 src1---->line1
+		// src2--->line2
         pixel *src1 = src0+src_stride;
         pixel *src2 = src1+src_stride;
         for( int x = 0; x<width; x++ )
         {
             // slower than naive bilinear, but matches asm
 #define FILTER(a,b,c,d) ((((a+b+1)>>1)+((c+d+1)>>1)+1)>>1)
-            dst0[x] = FILTER(src0[2*x  ], src1[2*x  ], src0[2*x+1], src1[2*x+1]);
-            dsth[x] = FILTER(src0[2*x+1], src1[2*x+1], src0[2*x+2], src1[2*x+2]);
-            dstv[x] = FILTER(src1[2*x  ], src2[2*x  ], src1[2*x+1], src2[2*x+1]);
-            dstc[x] = FILTER(src1[2*x+1], src2[2*x+1], src1[2*x+2], src2[2*x+2]);
+            dst0[x] = FILTER(src0[2*x  ], src1[2*x  ], src0[2*x+1], src1[2*x+1]);//((A00+A10+1)>>1)+(((A01+A11+1)>>1)+1)>>1)
+            dsth[x] = FILTER(src0[2*x+1], src1[2*x+1], src0[2*x+2], src1[2*x+2]);//((A01+A11+1)>>1)+(((A02+A12+1)>>1)+1)>>1)
+            dstv[x] = FILTER(src1[2*x  ], src2[2*x  ], src1[2*x+1], src2[2*x+1]);//((A10+A20+1)>>1)+(((A11+A21+1)>>1)+1)>>1)
+            dstc[x] = FILTER(src1[2*x+1], src2[2*x+1], src1[2*x+2], src2[2*x+2]);//((A11+A21+1)>>1)+(((A12+A22+1)>>1)+1)>>1)
 #undef FILTER
         }
-        src0 += src_stride*2;
+        src0 += src_stride*2; //move down tow lines
         dst0 += dst_stride;
         dsth += dst_stride;
         dstv += dst_stride;
