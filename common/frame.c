@@ -524,7 +524,55 @@ static void ALWAYS_INLINE pixel_memset( pixel *dst, pixel *src, int len, int siz
             dstp[i] = v1;
     }
 }
-
+//EXAMPLE: 1280x720  x264_frame_init_lowres will call this function;
+//         lowres of luma has fouth subset{0,h,v,c}.
+//GDB:  plane_expand_border (b_chroma=0, b_pad_bottom=1, b_pad_top=1, i_padv=32, i_padh=32, i_height=360, i_width=640,
+//    i_stride=704, pix=0x7ffff53d1760 '\020' <repeats 200 times>...) at common/frame.c:531
+//
+//LEFT BAND: copy Y(0---32,0---360) ====> y(-1---(-32),0---360)
+//                    -i_padh--(-1)                                          0-------widith-1
+//  +      |yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy |YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY .......... YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY|
+//  +      |yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy |YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY .......... YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY|
+//  +      |yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy |YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY .......... YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY|
+//  +      |yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy |YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY .......... YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY|
+//  0      |           .........             |                                 ..........                                 |
+//  +      |           .........             |                                 ..........                                 |
+//height-1 |           .........             |                                 ..........                                 |
+//  +      |           .........             |                                 ..........                                 |
+//  +      |           .........             |                                 ..........                                 |
+//  +      |yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy |YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY .......... YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY|
+//  +      |yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy |YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY .......... YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY|
+//  +      |yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy |YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY .......... YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY|
+//  +      |yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy |YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY .......... YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY|
+//
+//UPPER BAND: copy Y(-i_padh---widith+i_padh,0)=====>y(-i_padh---widith+i_padh,-1---(-i_padv))
+//
+//
+//                    -i_padh--(-1)                                          0-------widith-1
+//  +      |yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy |yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy .......... yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy|
+//  +      |yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy |yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy .......... yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy|
+//  -i_padv|yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy |yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy .......... yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy|
+//  *      |           .........             |                                 ..........                                 |
+//  -1     |           .........             |                                 ..........                                 |
+//  +      |yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy |yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy .......... yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy|
+//  +      |yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy |yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy .......... yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy|
+//  +      |yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy |yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy .......... yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy|
+//  ----------------------------------------------------------------------------------------------------------------------
+//  +      |yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy |YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY .......... YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY|
+//  +      |yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy |YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY .......... YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY|
+//  +      |yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy |YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY .......... YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY|
+//  +      |yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy |YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY .......... YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY|
+//  0      |           .........             |                                 ..........                                 |
+//  *      |           .........             |                                 ..........                                 |
+//height-1 |           .........             |                                 ..........                                 |
+//  +      |           .........             |                                 ..........                                 |
+//  +      |           .........             |                                 ..........                                 |
+//  +      |yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy |YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY .......... YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY|
+//  +      |yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy |YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY .......... YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY|
+//  +      |yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy |YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY .......... YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY|
+//  +      |yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy |YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY .......... YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY|
+//
+//CONCLUTION:LEFT---RIGHT---UPPER---LOWER, 1280x720 will become (padh+1280+padh)x(padv+720+padv)==1344x784
 static void ALWAYS_INLINE plane_expand_border( pixel *pix, int i_stride, int i_width, int i_height, int i_padh, int i_padv, int b_pad_top, int b_pad_bottom, int b_chroma )
 {
 #define PPIXEL(x, y) ( pix + (x) + (y)*i_stride )
