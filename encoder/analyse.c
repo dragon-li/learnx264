@@ -137,6 +137,7 @@ typedef struct
 } x264_mb_analysis_t;
 
 /* lambda = pow(2,qp/6-2) */
+/* liyl add:h264 standard: if(intra) {lambda(motion) = lambda(mode)  }else {lambda(motion) = log2(lambda(mode))}*/
 const uint16_t x264_lambda_tab[QP_MAX_MAX+1] =
 {
    1,   1,   1,   1,   1,   1,   1,   1, /*  0- 7 */
@@ -154,6 +155,7 @@ const uint16_t x264_lambda_tab[QP_MAX_MAX+1] =
 
 /* lambda2 = pow(lambda,2) * .9 * 256 */
 /* Capped to avoid overflow */
+/* liyl add:h264 standard: lambda(mode) = 0.85*2^((q-12)/3) <==> lambda2 */
 const int x264_lambda2_tab[QP_MAX_MAX+1] =
 {
        14,       18,       22,       28,       36,       45,      57,      72, /*  0- 7 */
@@ -279,6 +281,7 @@ static uint16_t x264_cost_ref[QP_MAX+1][3][33];
 static UNUSED x264_pthread_mutex_t cost_ref_mutex = X264_PTHREAD_MUTEX_INITIALIZER;
 static uint16_t x264_cost_i4x4_mode[(QP_MAX+2)*32];
 
+//init cost of SE() and UE()
 float *x264_analyse_prepare_costs( x264_t *h )
 {
     float *logs = x264_malloc( (2*4*2048+1)*sizeof(float) );
@@ -287,6 +290,9 @@ float *x264_analyse_prepare_costs( x264_t *h )
     logs[0] = 0.718f;
     for( int i = 1; i <= 2*4*2048; i++ )
         logs[i] = log2f(i+1)*2 + 1.718f;
+	//TODO FIXED ME:Speculation about the compression ratio of the Colombo encoding (the inverse function of the range of the expression of the Colombo code);
+	//the range of the expression of the Colomb code is [2^(q+m)-2^m , 2^(q+m+1)-2^m-1]
+
     return logs;
 }
 
@@ -369,6 +375,7 @@ void x264_analyse_weight_frame( x264_t *h, int end )
 /* initialize an array of lambda*nbits for all possible mvs */
 static void x264_mb_analyse_load_costs( x264_t *h, x264_mb_analysis_t *a )
 {
+	//cost_mv = lambda(motion)*Golomb_compress_rate[mv_length]
     a->p_cost_mv = h->cost_mv[a->i_qp];
     a->p_cost_ref[0] = x264_cost_ref[a->i_qp][x264_clip3(h->sh.i_num_ref_idx_l0_active-1,0,2)];
     a->p_cost_ref[1] = x264_cost_ref[a->i_qp][x264_clip3(h->sh.i_num_ref_idx_l1_active-1,0,2)];
