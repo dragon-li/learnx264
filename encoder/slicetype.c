@@ -48,6 +48,15 @@ void x264_opencl_slicetype_prep( x264_t *h, x264_frame_t **frames, int num_frame
 void x264_opencl_slicetype_end( x264_t *h );
 #endif
 
+/*
+ *
+ * blog https://my.oschina.net/u/269082/blog/886661
+ * 1,cost_mv init
+ * 2,cost_ref init
+ * 3,cost_i4x4_mode init
+ *
+ *
+ * */
 static void x264_lowres_context_init( x264_t *h, x264_mb_analysis_t *a )
 {
     a->i_qp = X264_LOOKAHEAD_QP;
@@ -1827,7 +1836,7 @@ void x264_slicetype_decide( x264_t *h )
             h->lookahead->next.list[i]->i_type =
                 x264_ratecontrol_slice_type( h, h->lookahead->next.list[i]->i_frame );
     }
-    else if( (h->param.i_bframe && h->param.i_bframe_adaptive)
+    else if( (h->param.i_bframe && h->param.i_bframe_adaptive)/*liyl add: i_bframe default value is 3        */
              || h->param.i_scenecut_threshold
              || h->param.rc.b_mb_tree
              || (h->param.rc.i_vbv_buffer_size && h->param.rc.i_lookahead) )
