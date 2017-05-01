@@ -1483,6 +1483,11 @@ static int scenecut( x264_t *h, x264_mb_analysis_t *a, x264_frame_t **frames, in
 #define IS_X264_TYPE_AUTO_OR_I(x) ((x)==X264_TYPE_AUTO || IS_X264_TYPE_I(x))
 #define IS_X264_TYPE_AUTO_OR_B(x) ((x)==X264_TYPE_AUTO || IS_X264_TYPE_B(x))
 
+/*
+ * https://my.oschina.net/u/269082/blog/889892
+ *
+ *
+ */
 void x264_slicetype_analyse( x264_t *h, int intra_minigop )
 {
     x264_mb_analysis_t a;
